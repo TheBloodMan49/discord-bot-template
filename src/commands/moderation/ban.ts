@@ -41,7 +41,8 @@ export default new Command({
 
         if (interaction.user.bot) return;
 
-        if(!interaction.inGuild()) return await interaction.reply("You can't ban someone outside of a guild!");
+        if(!interaction.guild) return await interaction.reply("You can't ban someone outside of a guild!");
+
 
         const target = interaction.options.getUser("target");
         if(!target) return await interaction.reply("No target specified");
@@ -104,7 +105,7 @@ export default new Command({
                     break;
             }
             timestampUnban = interaction.createdTimestamp + digit*timescaleNumber;
-            client.db.push("bans",{user: targetMember.user.id, guild: interaction.guild?.id, unban: timestampUnban});
+            client.db.push(`${interaction.guild.id}.bans`,{user: targetMember.user.id, guild: interaction.guild?.id, unban: timestampUnban});
         }
 
         //await targetMember.ban({deleteMessageDays: deleteMessageDays, reason: reason});
@@ -112,11 +113,11 @@ export default new Command({
         let replyEmbed = new EmbedBuilder()
             .setTitle(`**Ban**`)
             .setColor(Colors.Green)
-            .setTimestamp(interaction.createdTimestamp)
+            .setTimestamp()
             .addFields({name: "User", value: targetMember.user.tag})
             .addFields({name: "Reason", value: reason})
             .addFields({name: "Unbanned on", value: timestampUnban ? new Date(timestampUnban).toDateString() : "Never"})
-            .setAuthor({name: targetMember.displayName/*, iconURL: targetMember.avatarURL*/});
+            .setAuthor({name: targetMember.displayName, iconURL: targetMember.avatarURL() ?? undefined});
         await interaction.reply({embeds: [replyEmbed]});
     }
 });

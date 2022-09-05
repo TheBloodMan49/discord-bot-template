@@ -1,17 +1,18 @@
-import { ApplicationCommandDataResolvable, Client, ClientEvents, ClientOptions, Collection } from "discord.js";
+import { ApplicationCommandType, Client, ClientEvents, ClientOptions, Collection } from "discord.js";
 import { CommandType } from "../typings/Command";
-import glob from'glob';
-import { promisify } from 'util';
-import { RegisterCommandOptions } from "../typings/Client";
+import glob from "glob";
+import { promisify } from "util";
 import { Event } from "../structures/Event";
 import { Logger } from "../utils/logger";
 import { QuickDB } from "quick.db";
+import config from "../config";
 
 const globPromise = promisify(glob);
 
 export class ExtendedClient extends Client {
     public commands: Collection<string, CommandType> = new Collection<string, CommandType>();
-    public devMode: boolean = process.env.environment != 'prod' ? true : false;
+
+    public devMode: boolean = process.env.environment != 'prod';
 
     public db = new QuickDB({ filePath: `${__dirname}/../../db.sqlite` });
     
@@ -32,42 +33,28 @@ export class ExtendedClient extends Client {
         return (await import(filePath))?.default;
     }
 
-    async registerCommands({ commands }: RegisterCommandOptions) {
-        for (const command of commands) {
-
-            if(command.guildId) {
-                for (const id of command.guildId) {
-                    this.guilds.cache.get(id)?.commands.create(command).then(() => {
-                        Logger.log('DEBUG', `Registered command ${command.name} for guild ${id}`);
-                    });
-                    
-                }
-            } else {
-                this.application?.commands.create(command).then(() => {
-                    Logger.log('DEBUG', `Registered command ${command.name} globally`);
-                });
-            }
-        }
-    }
-
     async registerModules() {
         // Commands
-        const slashCommands: CommandType[] = [];
-        const commandFiles = await globPromise(`${__dirname}/../commands/*/*{.ts,.js}`);
+        const commands: CommandType[] = [];
 
+        const commandFiles = await globPromise(`${__dirname}/../commands/*/*{.ts,.js}`);
         commandFiles.forEach(async filePath => {
-            const command: CommandType = await this.importFile(filePath);
+            let command: CommandType = await this.importFile(filePath);
+            if(!command.name) return;
+
+            command.type = ApplicationCommandType.ChatInput;
+
+            this.commands.set(command.name, command);
+            commands.push(command);
+        });
+
+        const contextMenuFiles = await globPromise(`${__dirname}/../context-menu/*{.ts,.js}`);
+        contextMenuFiles.forEach(async filePath => {
+            let command: CommandType = await this.importFile(filePath);
             if(!command.name) return;
 
             this.commands.set(command.name, command);
-            slashCommands.push(command);
-
-        });
-
-        this.on("ready", () => {
-            this.registerCommands({
-                commands: slashCommands,
-            });
+            commands.push(command);
         });
 
         // Events
@@ -77,6 +64,10 @@ export class ExtendedClient extends Client {
             this.on(event.event, event.run);
         });
 
+    }
+
+    isOwner = (id:string) => {
+        return config.owners.includes(id);
     }
 
 }

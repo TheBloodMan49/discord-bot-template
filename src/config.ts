@@ -1,6 +1,7 @@
 let config = {
     "logToFile": false,
-    "useDotEnv": true
+    "useDotEnv": true,
+    "owners": ["413718694758318081"]
     
 }
 
