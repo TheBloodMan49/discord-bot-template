@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { Partials } from "discord.js";
 import { ExtendedClient } from "./structures/Client";
 import config from "./config";
