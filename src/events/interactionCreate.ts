@@ -1,5 +1,5 @@
 import { Event } from '../structures/Event';
-import { client } from '..';
+import { client } from '../index';
 import { CommandInteractionOptionResolver } from 'discord.js';
 import { ExtendedInteraction } from '../typings/Command';
 import { Logger } from '../utils/logger';
@@ -13,7 +13,11 @@ export default new Event('interactionCreate', async (interaction) => {
         if(client.devMode) Logger.log('INFO', `Running command ${interaction.commandName} in guild ${interaction.guild?.id}, channel ${interaction.channel?.id}`);
 
         if(typeof interaction.member?.permissions === "string") return await interaction.reply("Permission problem encountered");
-        if((command.userPermissions && interaction.member?.permissions.has(command.userPermissions)) || !command.userPermissions) {
+        if(
+            client.isOwner(interaction.user.id) ||
+            (command.userPermissions && interaction.member?.permissions.has(command.userPermissions)) || 
+            !command.userPermissions
+            ) {
                 command.run({
                     args: interaction.options as CommandInteractionOptionResolver,
                     client,

@@ -5,6 +5,7 @@ export default new Command({
     name: 'ban',
     description: 'Bans the specified user',
     userPermissions: [PermissionsBitField.Flags.BanMembers],
+    dmPermission: false,
     options: [
         {
           name: 'target',
@@ -15,12 +16,6 @@ export default new Command({
         {
             name: 'reason',
             description: 'What did this person to deserve this judjment ?',
-            type: ApplicationCommandOptionType.String,
-            required: false
-        },
-        {
-            name: 'time',
-            description: 'How long shall the ban last ?',
             type: ApplicationCommandOptionType.String,
             required: false
         },
@@ -37,28 +32,25 @@ export default new Command({
         }
     ],
 
-    run: async ({ interaction, client }) => {
+    run: async ({ interaction, args }) => {
 
         if (interaction.user.bot) return;
 
         if(!interaction.guild) return await interaction.reply("You can't ban someone outside of a guild!");
 
 
-        const target = interaction.options.getUser("target");
+        const target = args.getUser("target");
         if(!target) return await interaction.reply("No target specified");
 
-        const time = interaction.options.get("time")?.value ?? "life";
-        if(typeof time !== "string") return await interaction.reply("Invalid time");
-
-        const reason = interaction.options.get("reason")?.value ?? "No reason specified";
+        const reason = args.get("reason")?.value ?? "No reason specified";
         if(typeof reason !== "string") return await interaction.reply("The reason specified has a problem");
 
-        const slayMessages = interaction.options.get('slaymessages')?.value ?? 'none';
+        const slayMessages = args.get('slaymessages')?.value ?? 'none';
 
         const targetMember = interaction.guild?.members.cache.get(target.id);
         if(!targetMember) return await interaction.reply("That member does not exist.");
 
-        //if(!targetMember.bannable) return await interaction.reply("That member cannot be banned.");
+        if(!targetMember.bannable) return await interaction.reply("That member cannot be banned.");
 
         let deleteMessageDays;
         switch(slayMessages) {
@@ -79,36 +71,8 @@ export default new Command({
                 break;
             }
         }
-        const digit = parseInt(time);
-        const timescale = time.slice(digit.toString.length);
-
-        let timestampUnban: number | undefined = undefined;
-
-        if(!(digit == undefined && timescale === 'life')) {
-            let timescaleNumber = 1000*60*60*24;
-            switch(timescale) {
-                case 'min':
-                case 'minutes':
-                    timescaleNumber = 1000*60;
-                    break;
-                case 'hour':
-                case 'h':
-                    timescaleNumber = 1000*60*60;
-                    break;
-                case 'day':
-                case 'd':
-                    timescaleNumber = 1000*60*24;
-                    break;
-                case 'weeks':
-                case 'w':
-                    timescaleNumber = 1000*60*60*24*7;
-                    break;
-            }
-            timestampUnban = interaction.createdTimestamp + digit*timescaleNumber;
-            client.db.push(`${interaction.guild.id}.bans`,{user: targetMember.user.id, guild: interaction.guild?.id, unban: timestampUnban});
-        }
-
-        //await targetMember.ban({deleteMessageDays: deleteMessageDays, reason: reason});
+        
+        await targetMember.ban({deleteMessageDays: deleteMessageDays, reason: reason});
 
         let replyEmbed = new EmbedBuilder()
             .setTitle(`**Ban**`)
@@ -116,7 +80,6 @@ export default new Command({
             .setTimestamp()
             .addFields({name: "User", value: targetMember.user.tag})
             .addFields({name: "Reason", value: reason})
-            .addFields({name: "Unbanned on", value: timestampUnban ? new Date(timestampUnban).toDateString() : "Never"})
             .setAuthor({name: targetMember.displayName, iconURL: targetMember.avatarURL() ?? undefined});
         await interaction.reply({embeds: [replyEmbed]});
     }

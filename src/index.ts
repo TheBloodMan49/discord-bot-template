@@ -8,7 +8,7 @@ if(config.useDotEnv) require('dotenv').config();
 
 export const client = new ExtendedClient({ 
     intents: 32767 , 
-    partials: [Partials.Message], 
+    partials: [Partials.Message, Partials.Channel], 
     presence: {
         activities: [{
         name: "the vastness of space",

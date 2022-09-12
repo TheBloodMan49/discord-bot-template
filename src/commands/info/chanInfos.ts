@@ -6,6 +6,7 @@ export default new Command({
     name: 'infos',
     description: "Shows infos on the current channel",
     userPermissions: [PermissionsBitField.Flags.ManageChannels],
+    dmPermission: false,
     options: [
       {
         name: 'show',

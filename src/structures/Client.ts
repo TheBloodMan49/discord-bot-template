@@ -4,7 +4,6 @@ import glob from "glob";
 import { promisify } from "util";
 import { Event } from "../structures/Event";
 import { Logger } from "../utils/logger";
-import { QuickDB } from "quick.db";
 import config from "../config";
 
 const globPromise = promisify(glob);
@@ -13,8 +12,6 @@ export class ExtendedClient extends Client {
     public commands: Collection<string, CommandType> = new Collection<string, CommandType>();
 
     public devMode: boolean = process.env.environment != 'prod';
-
-    public db = new QuickDB({ filePath: `${__dirname}/../../db.sqlite` });
     
     constructor(options: ClientOptions) {
         super(options);

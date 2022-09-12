@@ -3,12 +3,15 @@ import { CommandType } from "../typings/Command";
 import { Logger } from "./logger";
 
 
-export class Deployer {
+export class CommandDeployer {
     static async deployGuild(id: string) {
         try {
             let toDeploy: CommandType[] = [];
             client.commands.forEach(command => {
-                if(command.guildId?.includes(id)) toDeploy.push(command);
+                if(command.guildId?.includes(id)) {
+                    toDeploy.push(command);
+                    Logger.log('DEBUG', `Deploying command "${command.name}" for guild "${id}`)
+                }
             });
             await client.guilds.cache.get(id)?.commands.set(toDeploy);
         } catch (err) {
@@ -20,7 +23,10 @@ export class Deployer {
         try {
             let toDeploy: CommandType[] = [];
             client.commands.forEach(command => {
-                if(!command.guildId) toDeploy.push(command);
+                if(!command.guildId) {
+                    toDeploy.push(command);
+                    Logger.log('DEBUG', `Deploying command "${command.name}" globally`)
+                }
             });
             await client.application?.commands.set(toDeploy);
         } catch (err) {
